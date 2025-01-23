@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"concurrency/app/compute"
+	"concurrency/app/service"
 	"concurrency/app/storage"
 	"go.uber.org/zap"
 )
@@ -14,8 +15,9 @@ import (
 func main() {
 	logger, _ := zap.NewProduction()
 	engine := storage.NewStorage(logger)
-	queryParser := compute.New(logger, engine)
+	queryParser := compute.New(logger)
 	ctx := context.Background()
+	s := service.New(engine, queryParser, logger)
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if !scanner.Scan() {
@@ -26,7 +28,7 @@ func main() {
 			logger.Debug("Exiting...")
 			break
 		}
-		res := queryParser.Parse(ctx, query)
+		res := s.Handler(ctx, query)
 		logger.Info(res)
 	}
 }

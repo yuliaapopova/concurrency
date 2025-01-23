@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,19 +15,13 @@ const (
 	Del = "DEL"
 )
 
-type Engine interface {
-	QueryHandler(ctx context.Context, query Query) string
-}
-
 type Compute struct {
-	log    *zap.Logger
-	engine Engine
+	log *zap.Logger
 }
 
-func New(log *zap.Logger, engine Engine) *Compute {
+func New(log *zap.Logger) *Compute {
 	return &Compute{
-		log:    log,
-		engine: engine,
+		log: log,
 	}
 }
 
@@ -64,16 +59,16 @@ func validateCommand(command Command, args []string) error {
 	return nil
 }
 
-func (c *Compute) Parse(ctx context.Context, query string) string {
+func (c *Compute) Parse(ctx context.Context, query string) (Query, error) {
 	args := strings.Fields(query)
 	if len(args) == 0 {
-		return "no command specified"
+		return Query{}, errors.New("no command specified")
 	}
 	command := parseCommand(args[0])
 	err := validateCommand(command, args[1:])
 	if err != nil {
 		c.log.Debug("invalid command", zap.String("command", command.String()), zap.Error(err))
-		return err.Error()
+		return Query{}, err
 	}
-	return c.engine.QueryHandler(ctx, Query{Command: command, Args: args[1:]})
+	return Query{Command: command, Args: args[1:]}, nil
 }
