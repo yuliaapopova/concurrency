@@ -3,16 +3,18 @@ package config
 import (
 	"errors"
 	"io"
-	"strconv"
 	"time"
-	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	defaultMessageSize    = "1MB"
-	defaultMessageSizeInt = 1024 * 1024
+	defaultMessageSize = "1MB"
+	engineType         = "in_memory"
+	defaultIdleTimeout = time.Minute
+	defaultAddress     = "127.0.0.1:9000"
+	defaultLogLever    = "info"
+	defaultLogOutput   = "/log/output.log"
 )
 
 type Config struct {
@@ -43,7 +45,7 @@ func createEngine(engine *Engine) *Engine {
 	}
 
 	if engine.Type == "" {
-		engine.Type = "in_memory"
+		engine.Type = engineType
 	}
 	return engine
 }
@@ -54,19 +56,15 @@ func createNetwork(network *Network) *Network {
 	}
 
 	if network.MaxMessageSize == "" {
-		network.MaxMessageSize = "1MB"
+		network.MaxMessageSize = defaultMessageSize
 	}
 
 	if network.IdleTimeout == 0 {
-		network.IdleTimeout = 5 * time.Minute
-	}
-
-	if network.MaxConn == 0 {
-		network.MaxConn = 100
+		network.IdleTimeout = defaultIdleTimeout
 	}
 
 	if network.Address == "" {
-		network.Address = "127.0.0.1:9000"
+		network.Address = defaultAddress
 	}
 
 	return network
@@ -78,47 +76,14 @@ func createLogging(logging *Logging) *Logging {
 	}
 
 	if logging.Level == "" {
-		logging.Level = "info"
+		logging.Level = defaultLogLever
 	}
 
 	if logging.Output == "" {
-		logging.Output = "/log/output.log"
+		logging.Output = defaultLogOutput
 	}
 
 	return logging
-}
-
-func (n *Network) ParseMessageSize() (int, error) {
-	if n.MaxMessageSize == "0" || len(n.MaxMessageSize) < 2 || n.MaxMessageSize[0] == '0' {
-		return 0, errors.New("invalid max_message_size")
-	}
-
-	r := []rune(n.MaxMessageSize)
-	sizeR := []rune{}
-	idx := 0
-
-	for unicode.IsDigit(r[idx]) {
-		sizeR = append(sizeR, r[idx])
-		idx++
-	}
-
-	size, err := strconv.Atoi(string(sizeR))
-	if err != nil {
-		return 0, errors.New("invalid max_message_size")
-	}
-	switch n.MaxMessageSize[idx:] {
-	case "B", "b", "":
-		break
-	case "KB", "kb", "Kb":
-		size = size * 1024
-	case "MB", "mb", "Mb":
-		size = size * 1024 * 1024
-	case "GB", "gb", "Gb":
-		size = size * 1024 * 1024 * 1024
-	default:
-		return 0, errors.New("invalid max_message_size")
-	}
-	return size, nil
 }
 
 func BuildConfig(config *Config) *Config {
