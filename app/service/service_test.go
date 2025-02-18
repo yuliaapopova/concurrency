@@ -6,18 +6,25 @@ import (
 	"testing"
 
 	"concurrency/app/compute"
+	"concurrency/app/config"
 	"concurrency/app/service/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 )
 
-func TestStorage_QueryHandler(t *testing.T) {
+func TestService_Handler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	parser := mocks.NewMockCompute(ctrl)
 	repo := mocks.NewMockEngine(ctrl)
 	logger := zap.NewNop()
-	service := New(repo, parser, logger)
+
+	cfg := &config.Config{
+		Network: &config.Network{
+			Address: "localhost:8008",
+		},
+	}
+	service := New(cfg, repo, parser, logger)
 
 	ctx := context.Background()
 
@@ -61,7 +68,7 @@ func TestStorage_QueryHandler(t *testing.T) {
 			queryStr: "SET key value",
 			query:    compute.Query{Command: compute.SET, Args: []string{"key", "value"}},
 			err:      nil,
-			expected: "",
+			expected: "[ok]",
 		},
 		"get queryStr": {
 			queryStr: "GET key",
@@ -73,7 +80,7 @@ func TestStorage_QueryHandler(t *testing.T) {
 			queryStr: "DEL key",
 			query:    compute.Query{Command: compute.DEL, Args: []string{"key"}},
 			err:      nil,
-			expected: "",
+			expected: "[ok]",
 		},
 	}
 
@@ -89,3 +96,19 @@ func TestStorage_QueryHandler(t *testing.T) {
 		})
 	}
 }
+
+//func TestService_Start(t *testing.T) {
+//	ctrl := gomock.NewController(t)
+//	parser := mocks.NewMockCompute(ctrl)
+//	repo := mocks.NewMockEngine(ctrl)
+//	logger := zap.NewNop()
+//	cfg := &config.Config{
+//		Network: &config.Network{
+//			Address: "localhost:8008",
+//		},
+//	}
+//	service := New(cfg, repo, parser, logger)
+//	ctx := context.Background()
+//
+//	Start(ctx, cfg)
+//}
