@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"sync"
-	"unicode"
 
+	"concurrency/app/common"
 	"concurrency/app/config"
 	"go.uber.org/zap"
 )
@@ -33,7 +32,7 @@ func NewTCPServer(ctx context.Context, cfg *config.Network, logger *zap.Logger) 
 		return nil, fmt.Errorf("error creating tcp listener: %w", err)
 	}
 
-	bufferSize, err := parseMessageSize(cfg.MaxMessageSize)
+	bufferSize, err := common.ParseMessageSize(cfg.MaxMessageSize)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing message size: %w", err)
 	}
@@ -116,37 +115,4 @@ func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn, handler
 			return
 		}
 	}
-}
-
-func parseMessageSize(maxMessageSize string) (int, error) {
-	if maxMessageSize == "0" || len(maxMessageSize) < 2 || maxMessageSize[0] == '0' {
-		return 0, errors.New("invalid max_message_size")
-	}
-
-	r := []rune(maxMessageSize)
-	sizeR := []rune{}
-	idx := 0
-
-	for unicode.IsDigit(r[idx]) {
-		sizeR = append(sizeR, r[idx])
-		idx++
-	}
-
-	size, err := strconv.Atoi(string(sizeR))
-	if err != nil {
-		return 0, errors.New("invalid max_message_size")
-	}
-	switch maxMessageSize[idx:] {
-	case "B", "b", "":
-		break
-	case "KB", "kb", "Kb":
-		size = size * 1024
-	case "MB", "mb", "Mb":
-		size = size * 1024 * 1024
-	case "GB", "gb", "Gb":
-		size = size * 1024 * 1024 * 1024
-	default:
-		return 0, errors.New("invalid max_message_size")
-	}
-	return size, nil
 }

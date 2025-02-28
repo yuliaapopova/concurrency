@@ -16,6 +16,11 @@ network:
   max_connections: 10
   max_message_size: "4KB"
   idle_timeout: 10m
+wal:
+  flushing_batch_length: 100
+  flushing_batch_timeout: "10ms"
+  max_segment_size: "10MB"
+  data_directory: "/data/spider/wal"
 logging:
   level: "info"
   output: "/log/output.log"
@@ -34,9 +39,9 @@ func TestNewConfig(t *testing.T) {
 				},
 				Network: &Network{
 					Address:        "127.0.0.1:9000",
-					MaxConn:        100,
+					MaxConn:        0,
 					MaxMessageSize: "1MB",
-					IdleTimeout:    time.Minute * 5,
+					IdleTimeout:    time.Minute * 1,
 				},
 				Logging: &Logging{
 					Level:  "info",
@@ -55,6 +60,12 @@ func TestNewConfig(t *testing.T) {
 					MaxConn:        10,
 					MaxMessageSize: "4KB",
 					IdleTimeout:    time.Minute * 10,
+				},
+				WAL: &WAL{
+					FlushingBatchSize:    100,
+					FlushingBatchTimeout: time.Millisecond * 10,
+					MaxSegmentSize:       "10MB",
+					DataDirectory:        "/data/spider/wal",
 				},
 				Logging: &Logging{
 					Level:  "info",

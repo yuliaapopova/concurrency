@@ -1,4 +1,4 @@
-package storage
+package engine
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestStorage_Get(t *testing.T) {
-	repo := NewStorage(zap.NewNop())
+	repo := NewEngine(zap.NewNop())
 	ctx := context.Background()
 
 	argument := "key"
@@ -23,7 +23,7 @@ func TestStorage_Get(t *testing.T) {
 }
 
 func TestStorage_Set(t *testing.T) {
-	repo := NewStorage(zap.NewNop())
+	repo := NewEngine(zap.NewNop())
 	ctx := context.Background()
 
 	args := []string{"key", "value"}
@@ -32,7 +32,7 @@ func TestStorage_Set(t *testing.T) {
 }
 
 func TestStorage_Del(t *testing.T) {
-	repo := NewStorage(zap.NewNop())
+	repo := NewEngine(zap.NewNop())
 	ctx := context.Background()
 
 	argument := "key"
