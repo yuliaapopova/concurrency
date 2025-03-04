@@ -97,11 +97,13 @@ func (w *WAL) write(ctx context.Context, command int, args []string) {
 
 	w.mx.Lock()
 	w.batch = append(w.batch, record)
-	if len(w.batch) >= w.batchSize {
-		w.batchChan <- w.batch
-		w.batch = nil
-	}
 	w.mx.Unlock()
+
+	batch := w.batch
+	if len(batch) >= w.batchSize {
+		w.batch = nil
+		w.batchChan <- batch
+	}
 
 	w.status = record.Status
 }

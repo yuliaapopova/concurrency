@@ -40,14 +40,14 @@ func (s *Segment) Write(data []byte) error {
 		}
 	}
 
-	err := s.file.Sync()
-	if err != nil {
-		return err
-	}
-
 	writtenBytes, err := s.file.Write(data)
 	if err != nil {
 		return fmt.Errorf("failed writing to file: %w", err)
+	}
+
+	err = s.file.Sync()
+	if err != nil {
+		return err
 	}
 
 	s.segmentSize += writtenBytes
