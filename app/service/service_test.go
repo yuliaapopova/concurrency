@@ -16,7 +16,7 @@ import (
 func TestService_Handler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	parser := mocks.NewMockCompute(ctrl)
-	repo := mocks.NewMockEngine(ctrl)
+	repo := mocks.NewMockStorage(ctrl)
 	logger := zap.NewNop()
 
 	cfg := &config.Config{
@@ -96,19 +96,3 @@ func TestService_Handler(t *testing.T) {
 		})
 	}
 }
-
-//func TestService_Start(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	parser := mocks.NewMockCompute(ctrl)
-//	repo := mocks.NewMockEngine(ctrl)
-//	logger := zap.NewNop()
-//	cfg := &config.Config{
-//		Network: &config.Network{
-//			Address: "localhost:8008",
-//		},
-//	}
-//	service := New(cfg, repo, parser, logger)
-//	ctx := context.Background()
-//
-//	Start(ctx, cfg)
-//}

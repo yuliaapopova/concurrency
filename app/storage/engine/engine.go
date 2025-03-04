@@ -1,4 +1,4 @@
-package storage
+package engine
 
 import (
 	"context"
@@ -8,20 +8,20 @@ import (
 	"go.uber.org/zap"
 )
 
-type Storage struct {
+type Engine struct {
 	log  *zap.Logger
 	data map[string]string
 	mx   sync.RWMutex
 }
 
-func NewStorage(log *zap.Logger) *Storage {
-	return &Storage{
+func NewEngine(log *zap.Logger) *Engine {
+	return &Engine{
 		log:  log,
 		data: map[string]string{},
 	}
 }
 
-func (s *Storage) Get(ctx context.Context, key string) string {
+func (s *Engine) Get(ctx context.Context, key string) string {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	if data, ok := s.data[key]; ok {
@@ -31,13 +31,13 @@ func (s *Storage) Get(ctx context.Context, key string) string {
 	}
 }
 
-func (s *Storage) Set(ctx context.Context, key, value string) {
+func (s *Engine) Set(ctx context.Context, key, value string) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	s.data[key] = value
 }
 
-func (s *Storage) Delete(ctx context.Context, key string) {
+func (s *Engine) Delete(ctx context.Context, key string) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	delete(s.data, key)

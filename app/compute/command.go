@@ -1,6 +1,6 @@
 package compute
 
-type Command uint32
+type Command int
 
 const (
 	GET Command = iota
@@ -19,5 +19,18 @@ func (c Command) String() string {
 		return "DEL"
 	default:
 		return "UNKNOWN"
+	}
+}
+
+func (c Command) Int() int {
+	switch c {
+	case GET:
+		return int(GET)
+	case SET:
+		return int(SET)
+	case DEL:
+		return int(DEL)
+	default:
+		return int(UNKNOWN)
 	}
 }
