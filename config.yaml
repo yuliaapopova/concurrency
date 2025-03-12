@@ -1,5 +1,6 @@
 engine:
   type: "in_memory"
+  partitions_number: 8
 network:
   address: "127.0.0.1:9001"
   max_connections: 10
@@ -10,6 +11,10 @@ wal:
   flushing_batch_timeout: "10s"
   max_segment_size: "10KB"
   data_directory: "/data/wal"
+replication:
+  replica_type: "master"
+  master_address: "127.0.0.1:9002"
+  sync_interval: "1s"
 logging:
   level: "info"
   output: "/log/output.log"

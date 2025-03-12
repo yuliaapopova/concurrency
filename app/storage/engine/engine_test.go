@@ -9,7 +9,7 @@ import (
 )
 
 func TestStorage_Get(t *testing.T) {
-	repo := NewEngine(zap.NewNop())
+	repo := NewEngine(zap.NewNop(), 8)
 	ctx := context.Background()
 
 	argument := "key"
@@ -23,20 +23,22 @@ func TestStorage_Get(t *testing.T) {
 }
 
 func TestStorage_Set(t *testing.T) {
-	repo := NewEngine(zap.NewNop())
+	repo := NewEngine(zap.NewNop(), 8)
 	ctx := context.Background()
 
 	args := []string{"key", "value"}
 	repo.Set(ctx, args[0], args[1])
-	assert.Equal(t, repo.data["key"], "value")
+	hash := repo.hash(args[0])
+	assert.Equal(t, repo.partitions[hash].data[args[0]], "value")
 }
 
 func TestStorage_Del(t *testing.T) {
-	repo := NewEngine(zap.NewNop())
+	repo := NewEngine(zap.NewNop(), 8)
 	ctx := context.Background()
 
 	argument := "key"
 	repo.Set(ctx, argument, "value")
 	repo.Delete(ctx, argument)
-	assert.Equal(t, repo.data["key"], "")
+	hash := repo.hash(argument)
+	assert.Equal(t, repo.partitions[hash].data["key"], "")
 }

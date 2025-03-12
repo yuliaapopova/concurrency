@@ -41,9 +41,11 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockStorage) Delete(ctx context.Context, key string) {
+func (m *MockStorage) Delete(ctx context.Context, key string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Delete", ctx, key)
+	ret := m.ctrl.Call(m, "Delete", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Delete indicates an expected call of Delete.
@@ -67,9 +69,11 @@ func (mr *MockStorageMockRecorder) Get(ctx, key any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockStorage) Set(ctx context.Context, key, value string) {
+func (m *MockStorage) Set(ctx context.Context, key, value string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Set", ctx, key, value)
+	ret := m.ctrl.Call(m, "Set", ctx, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Set indicates an expected call of Set.

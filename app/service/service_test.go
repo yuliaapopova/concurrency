@@ -84,9 +84,9 @@ func TestService_Handler(t *testing.T) {
 		},
 	}
 
-	repo.EXPECT().Set(ctx, "key", "value").Return()
+	repo.EXPECT().Set(ctx, "key", "value").Return(nil)
 	repo.EXPECT().Get(ctx, "key").Return("value")
-	repo.EXPECT().Delete(ctx, "key").Return()
+	repo.EXPECT().Delete(ctx, "key").Return(nil)
 
 	for name, test := range testData {
 		t.Run(name, func(t *testing.T) {

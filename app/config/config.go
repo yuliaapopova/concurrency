@@ -9,27 +9,33 @@ import (
 )
 
 const (
-	defaultMessageSize       = "1MB"
-	engineType               = "in_memory"
-	defaultIdleTimeout       = time.Minute
-	defaultAddress           = "127.0.0.1:9000"
-	defaultLogLever          = "info"
-	defaultLogOutput         = "/log/output.log"
-	defaultFlushingBatchSize = 100
-	defaultFlushingTimeout   = 10 * time.Second
-	defaultMaxSegmentSize    = "10KB"
-	defaultDataDirectory     = "/data/spider/wal"
+	defaultMessageSize          = "1MB"
+	defaultEngineType           = "in_memory"
+	defaultPartitionCount       = 8
+	defaultIdleTimeout          = time.Minute
+	defaultAddress              = "127.0.0.1:9000"
+	defaultLogLever             = "info"
+	defaultLogOutput            = "/log/output.log"
+	defaultFlushingBatchSize    = 100
+	defaultFlushingTimeout      = 10 * time.Second
+	defaultMaxSegmentSize       = "10KB"
+	defaultDataDirectory        = "/data/spider/wal"
+	defaultReplicaType          = "slave"
+	defaultReplicaMasterAddress = "127.0.0.1:9000"
+	defaultReplicaSyncInterval  = time.Second
 )
 
 type Config struct {
-	Engine  *Engine  `yaml:"engine"`
-	Network *Network `yaml:"network"`
-	WAL     *WAL     `yaml:"wal"`
-	Logging *Logging `yaml:"logging"`
+	Engine      *Engine      `yaml:"engine"`
+	Network     *Network     `yaml:"network"`
+	WAL         *WAL         `yaml:"wal"`
+	Replication *Replication `yaml:"replication"`
+	Logging     *Logging     `yaml:"logging"`
 }
 
 type Engine struct {
-	Type string `yaml:"type"`
+	Type             string `yaml:"type"`
+	PartitionsNumber int    `yaml:"partitions_number"`
 }
 
 type Network struct {
@@ -46,6 +52,12 @@ type WAL struct {
 	DataDirectory        string        `yaml:"data_directory"`
 }
 
+type Replication struct {
+	ReplicaType   string        `yaml:"replica_type"`
+	MasterAddress string        `yaml:"master_address"`
+	SyncInterval  time.Duration `yaml:"sync_interval"`
+}
+
 type Logging struct {
 	Level  string `yaml:"level"`
 	Output string `yaml:"output"`
@@ -57,8 +69,13 @@ func createEngine(engine *Engine) *Engine {
 	}
 
 	if engine.Type == "" {
-		engine.Type = engineType
+		engine.Type = defaultEngineType
 	}
+
+	if engine.PartitionsNumber == 0 {
+		engine.PartitionsNumber = defaultPartitionCount
+	}
+
 	return engine
 }
 
@@ -84,6 +101,22 @@ func createWAL(wal *WAL) *WAL {
 	}
 
 	return wal
+}
+
+func createReplication(replica *Replication) *Replication {
+	if replica == nil {
+		return nil
+	}
+	if replica.ReplicaType == "" {
+		replica.ReplicaType = defaultReplicaType
+	}
+	if replica.MasterAddress == "" {
+		replica.MasterAddress = defaultReplicaMasterAddress
+	}
+	if replica.SyncInterval == 0 {
+		replica.SyncInterval = defaultReplicaSyncInterval
+	}
+	return replica
 }
 
 func createNetwork(network *Network) *Network {
@@ -130,7 +163,7 @@ func BuildConfig(config *Config) *Config {
 	config.Network = createNetwork(config.Network)
 	config.WAL = createWAL(config.WAL)
 	config.Logging = createLogging(config.Logging)
-
+	config.Replication = createReplication(config.Replication)
 	return config
 }
 

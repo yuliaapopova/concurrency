@@ -27,7 +27,7 @@ func (s *Segment) SegmentNext() error {
 	if s.file != nil {
 		s.file.Close()
 	}
-	if err := s.createFile(s.directory); err != nil {
+	if err := s.createSegmentFile(s.directory); err != nil {
 		return err
 	}
 	return nil
@@ -55,7 +55,7 @@ func (s *Segment) Write(data []byte) error {
 }
 
 func (s *Segment) LoadData() ([][]byte, error) {
-	path, err := s.path(s.directory)
+	path, err := Path(s.directory)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (s *Segment) LoadData() ([][]byte, error) {
 		s.file = lastFile
 		s.segmentSize = sizeLastFile
 	} else {
-		if err = s.createFile(s.directory); err != nil {
+		if err = s.createSegmentFile(s.directory); err != nil {
 			return nil, err
 		}
 	}
@@ -98,16 +98,11 @@ func (s *Segment) LoadData() ([][]byte, error) {
 	return data, nil
 }
 
-func (s *Segment) createFile(dir string) error {
-	path, err := s.path(dir)
+func (s *Segment) createSegmentFile(dir string) error {
+	filename := fmt.Sprintf("wal_%d.wal", now().UnixMilli())
+	file, err := CreateFile(dir, filename)
 	if err != nil {
 		return err
-	}
-	filename := fmt.Sprintf("%s/wal_%d.wal", path, now().UnixMilli())
-
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed creating file: %w", err)
 	}
 
 	s.segmentSize = 0
@@ -115,7 +110,22 @@ func (s *Segment) createFile(dir string) error {
 	return nil
 }
 
-func (s *Segment) path(dir string) (string, error) {
+func CreateFile(dir, filename string) (*os.File, error) {
+	path, err := Path(dir)
+	if err != nil {
+		return nil, err
+	}
+	filePath := filepath.Join(path, filename)
+
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating file: %w", err)
+	}
+
+	return file, nil
+}
+
+func Path(dir string) (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -125,4 +135,58 @@ func (s *Segment) path(dir string) (string, error) {
 		return "", fmt.Errorf("failed to create wal folder '%s': %v", dir, err)
 	}
 	return path, nil
+}
+
+func SegmentNameNext(dir, segmentName string) (string, error) {
+	path, err := Path(dir)
+	if err != nil {
+		return "", err
+	}
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return "", fmt.Errorf("failed reading directory: %w", err)
+	}
+
+	filenames := make([]string, 0, len(files))
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		filenames = append(filenames, f.Name())
+	}
+
+	for i := len(filenames) - 1; i >= 0; i-- {
+		if filenames[i] > segmentName {
+			return filenames[i], nil
+		} else if filenames[i] == segmentName {
+			return "", nil
+		}
+	}
+	return "", fmt.Errorf("next segment not found")
+}
+
+func SegmentLastName(dir string) (string, error) {
+	path, err := Path(dir)
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return "", fmt.Errorf("failed reading directory: %w", err)
+	}
+
+	if len(files) == 0 {
+		return "", fmt.Errorf("no files found in directory '%s'", dir)
+	}
+	return files[len(files)-1].Name(), nil
+}
+
+func WriteFile(file *os.File, data []byte) error {
+	_, err := file.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed writing to file: %w", err)
+	}
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("failed sync to file: %w", err)
+	}
+
+	return nil
 }

@@ -2,6 +2,7 @@ package wal
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestWAL_Set(t *testing.T) {
 		FlushingBatchSize:    10,
 		FlushingBatchTimeout: 50 * time.Millisecond,
 		MaxSegmentSize:       "10KB",
-		DataDirectory:        "testdata",
+		DataDirectory:        "test_data",
 	}
 
 	wal, err := NewWAL(&cfg, logger)
@@ -48,4 +49,6 @@ func TestWAL_Set(t *testing.T) {
 	assert.NoError(t, err)
 	err = wal.Set(context.WithValue(ctx, "ID", uint64(2)), "key2", "value2")
 	assert.NoError(t, err)
+
+	os.RemoveAll(cfg.DataDirectory)
 }
