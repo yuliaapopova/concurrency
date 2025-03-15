@@ -16,15 +16,23 @@ type TCPServer interface {
 type Master struct {
 	server  TCPServer
 	walDir  string
+	walPath string
 	logger  *zap.Logger
 	segment *filesystem.Segment
 }
 
 func NewMaster(server TCPServer, walDir string, logger *zap.Logger) *Master {
+	path, err := filesystem.Path(walDir)
+	if err != nil {
+		logger.Error("Failed to create wal path", zap.Error(err))
+		return nil
+	}
+
 	return &Master{
-		server: server,
-		walDir: walDir,
-		logger: logger,
+		server:  server,
+		walDir:  walDir,
+		walPath: path,
+		logger:  logger,
 	}
 }
 
@@ -70,12 +78,7 @@ func (m *Master) sync(request Request) Response {
 		return response
 	}
 
-	path, err := filesystem.Path(m.walDir)
-	if err != nil {
-		m.logger.Error("failed to sync segment path", zap.Error(err))
-		return response
-	}
-	filename := fmt.Sprintf("%s/%s", path, segmentNameNext)
+	filename := fmt.Sprintf("%s/%s", m.walPath, segmentNameNext)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		m.logger.Error("failed to sync segment", zap.Error(err))

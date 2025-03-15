@@ -84,6 +84,16 @@ func Start(ctx context.Context, config *config.Config) {
 	s := New(config, db, queryParser, logger)
 
 	wg := &sync.WaitGroup{}
+	s.StartReplica(ctx, WAL, replica, wg)
+
+	net.HandleQueries(ctx, func(ctx context.Context, bytes []byte) []byte {
+		response := s.Handler(ctx, string(bytes))
+		return []byte(response)
+	})
+	wg.Wait()
+}
+
+func (s *Service) StartReplica(ctx context.Context, WAL *wal.WAL, replica *replication.Replica, wg *sync.WaitGroup) {
 	if WAL != nil {
 		wg.Add(1)
 		if replica != nil && replica.Slave != nil {
@@ -109,12 +119,6 @@ func Start(ctx context.Context, config *config.Config) {
 			}()
 		}
 	}
-
-	net.HandleQueries(ctx, func(ctx context.Context, bytes []byte) []byte {
-		response := s.Handler(ctx, string(bytes))
-		return []byte(response)
-	})
-	wg.Wait()
 }
 
 func (s *Service) Handler(ctx context.Context, queryStr string) string {
