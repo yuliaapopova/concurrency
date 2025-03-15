@@ -28,9 +28,12 @@ type Storage struct {
 	engine      Engine
 	wal         WAL
 	generatorID *IDGenerator
+
+	isReplicaSlave bool
+	stream         chan []wal.Log
 }
 
-func NewStorage(logger *zap.Logger, en Engine, wal WAL) (*Storage, error) {
+func NewStorage(logger *zap.Logger, en Engine, wal WAL, isReplicaSlave bool, stream chan []wal.Log) (*Storage, error) {
 	if logger == nil {
 		return nil, errors.New("logger required")
 	}
@@ -39,8 +42,10 @@ func NewStorage(logger *zap.Logger, en Engine, wal WAL) (*Storage, error) {
 	}
 
 	storage := &Storage{
-		logger: logger,
-		engine: en,
+		logger:         logger,
+		engine:         en,
+		isReplicaSlave: isReplicaSlave,
+		stream:         stream,
 	}
 
 	var lastLSN uint64
@@ -55,6 +60,14 @@ func NewStorage(logger *zap.Logger, en Engine, wal WAL) (*Storage, error) {
 
 	storage.generatorID = NewIDGenerator(lastLSN)
 
+	if stream != nil {
+		go func() {
+			for logs := range stream {
+				storage.applyData(logs)
+			}
+		}()
+	}
+
 	return storage, nil
 }
 
@@ -62,7 +75,10 @@ func (s *Storage) Get(ctx context.Context, key string) string {
 	return s.engine.Get(ctx, key)
 }
 
-func (s *Storage) Set(ctx context.Context, key string, value string) {
+func (s *Storage) Set(ctx context.Context, key string, value string) error {
+	if s.isReplicaSlave {
+		return errors.New("command SET is not available in slave")
+	}
 	ID := s.generatorID.NextID()
 	nexCtx := context.WithValue(ctx, "ID", ID)
 	if s.wal != nil {
@@ -70,17 +86,20 @@ func (s *Storage) Set(ctx context.Context, key string, value string) {
 		fmt.Println("wal finished")
 	}
 	s.engine.Set(nexCtx, key, value)
-	return
+	return nil
 }
 
-func (s *Storage) Delete(ctx context.Context, key string) {
+func (s *Storage) Delete(ctx context.Context, key string) error {
+	if s.isReplicaSlave {
+		return errors.New("command DEL is not available in slave")
+	}
 	ID := s.generatorID.NextID()
 	nexCtx := context.WithValue(ctx, "ID", ID)
 	if s.wal != nil {
 		s.wal.Delete(nexCtx, key)
 	}
 	s.engine.Delete(nexCtx, key)
-	return
+	return nil
 }
 
 func (s *Storage) applyData(logs []wal.Log) uint64 {

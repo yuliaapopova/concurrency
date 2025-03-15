@@ -11,6 +11,7 @@ import (
 const testCfgData = `
 engine:
   type: "in_memory"
+  partitions_number: 4
 network:
   address: "127.0.0.1:8080"
   max_connections: 10
@@ -21,6 +22,10 @@ wal:
   flushing_batch_timeout: "10ms"
   max_segment_size: "10MB"
   data_directory: "/data/spider/wal"
+replication:
+  replica_type: "slave"
+  master_address: "127.0.0.1:5050"
+  sync_interval: 1s
 logging:
   level: "info"
   output: "/log/output.log"
@@ -35,7 +40,8 @@ func TestNewConfig(t *testing.T) {
 			reader: "",
 			cfg: &Config{
 				Engine: &Engine{
-					Type: "in_memory",
+					Type:             "in_memory",
+					PartitionsNumber: 8,
 				},
 				Network: &Network{
 					Address:        "127.0.0.1:9000",
@@ -53,7 +59,8 @@ func TestNewConfig(t *testing.T) {
 			reader: testCfgData,
 			cfg: &Config{
 				Engine: &Engine{
-					Type: "in_memory",
+					Type:             "in_memory",
+					PartitionsNumber: 4,
 				},
 				Network: &Network{
 					Address:        "127.0.0.1:8080",
@@ -66,6 +73,11 @@ func TestNewConfig(t *testing.T) {
 					FlushingBatchTimeout: time.Millisecond * 10,
 					MaxSegmentSize:       "10MB",
 					DataDirectory:        "/data/spider/wal",
+				},
+				Replication: &Replication{
+					ReplicaType:   "slave",
+					MasterAddress: "127.0.0.1:5050",
+					SyncInterval:  time.Second,
 				},
 				Logging: &Logging{
 					Level:  "info",
